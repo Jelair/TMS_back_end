@@ -14,6 +14,8 @@
 __author__ = 'simplefly'
 
 import socket
+from www.ZRequest import ZRequest
+from www import routes
 
 def create_srv_socket(address):
     """Build and return a listening server socket."""
@@ -35,8 +37,7 @@ def syn_accept_conversation_forever(listener):
 def handle_conversation(sock, address):
     """Converse with a client over "sock" until they are done talking."""
     try:
-        while True:
-            handle_request(sock)
+        handle_request(sock)
     except EOFError:
         print('Client socket to {} has closed'.format(address))
     except Exception as e:
@@ -44,7 +45,29 @@ def handle_conversation(sock, address):
     finally:
         sock.close()
 
+def get_request(message):
+    """Build a Request object, init and return."""
+    request = ZRequest()
+    request.method = message.split()[0]
+    request.add_headers(message.split('\r\n\r\n', 1)[0].split('\r\n')[1:])
+    request.body = message.split('\r\n\r\n', 1)[1]
+    request.path = message.split()[1]
+    return request
+
 def handle_request(sock):
     """Receive a single client request on "sock" and send a answer."""
-    pass
+    msg = recv_message(sock)
+    request = get_request(msg)
+    print(request.method, request.path, request.body)
+    # deal data and deliver data
+    response = routes.response_for_request(request)
+    sock.sendall(response)
+
+def recv_message(sock):
+    """Receive bytes over socket "sock"."""
+    message = sock.recv(1024)
+    if not message or len(message.split()) < 2:
+        raise EOFError('socket closed')
+    message = message.decode('utf-8')
+    return message
 

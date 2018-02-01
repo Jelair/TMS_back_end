@@ -13,7 +13,8 @@
 """
 __author__ = 'simplefly'
 
-from zlib import socket_utils
+from www import socket_utils
+
 
 def run(address):
     listener = socket_utils.create_srv_socket(address)
