@@ -15,6 +15,10 @@ __author__ = 'simplefly'
 
 from jinja2 import Environment, FileSystemLoader
 import asyncio, os, json, time
+from datetime import datetime
+from async_www import orm
+from aiohttp import web
+from async_www.config import configs
 import logging; logging.basicConfig(level=logging.INFO)
 
 # 初始化渲染模板
@@ -39,6 +43,39 @@ def init_jinja2(app, **kw):
             env.filters[name] = f
     app['__templating__'] = env
 
+@asyncio.coroutine
+def logger_factory(app, handler):
+    @asyncio.coroutine
+    def logger(request):
+        logging.info('Request: %s %s' % (request.method, request.path))
+        return (yield from handler(request))
+    return logger
 
 
+def datetime_filter(t):
+    delta = int(time.time() - t)
+    if delta < 60:
+        return u'1分钟前'
+    if delta < 3600:
+        return u'%s分钟前' % (delta // 60)
+    if delta < 86400:
+        return u'%s小时前' % (delta // 3600)
+    if delta < 604800:
+        return u'%s天前' % (delta // 86400)
+    dt = datetime.fromtimestamp(t)
+    return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
+@asyncio.coroutine
+def init(loop):
+    yield from orm.create_pool(loop=loop, **configs.db)
+    app = web.Application(loop=loop, middlewares=[
+
+    ])
+    init_jinja2(app, filters=dict(datetime=datetime_filter))
+    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 9000)
+    logging.info('server started at http://127.0.0.1:9000...')
+    return srv
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(init(loop))
+loop.run_forever()
