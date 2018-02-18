@@ -152,6 +152,12 @@ def signout(request):
     logging.info('user signed out.')
     return r
 
+@get('/selfinfo')
+def selfinfo():
+    return {
+        '__template__': 'self_info.html'
+    }
+
 @get('/manage/')
 def manage():
     return 'redirect:/manage/comments'

@@ -17,6 +17,6 @@ import socket
 
 if __name__ == '__main__':
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(('127.0.0.1', 8888))
-    sock.sendall(b'test client')
+    sock.connect(('127.0.0.1', 9000))
+    sock.sendall(b'HTTP1.1 GET /')
     sock.close()
